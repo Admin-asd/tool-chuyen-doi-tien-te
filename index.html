@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Chuyển Đổi Tiền Tệ 12 Quốc Gia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar for dropdown lists */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Header / Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                    <i class="fa-solid me-0 fa-arrow-right-arrow-left text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">Chuyển Đổi Tiền Tệ</h1>
+                    <p class="text-xs text-slate-500">Cập nhật tỷ giá 12 đồng tiền phổ biến nhất</p>
+                </div>
+            </div>
+            <div id="api-status" class="hidden sm:flex items-center text-xs font-medium bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
+                <span>Tỷ giá trực tuyến</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-grow">
+        
+        <!-- Converter Card -->
+        <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 md:p-8 mb-8">
+            
+            <!-- Controls Container -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                
+                <!-- Amount Input -->
+                <div class="md:col-span-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Số tiền muốn đổi</label>
+                    <div class="relative">
+                        <input type="text" id="amount-input" value="1,000,000" class="w-full pl-4 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                        <button id="clear-amount" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- From Currency -->
+                <div class="md:col-span-3 relative">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Từ đồng tiền</label>
+                    <button type="button" id="from-btn" class="w-full flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-left focus:ring-2 focus:ring-indigo-500">
+                        <!-- Populated by JS -->
+                    </button>
+                    <!-- Dropdown List -->
+                    <div id="from-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 p-2 custom-scrollbar max-h-72 overflow-y-auto">
+                        <div class="p-1 mb-2 sticky top-0 bg-white">
+                            <input type="text" id="from-search" placeholder="Tìm kiếm đồng tiền..." class="w-full px-3 py-2 bg-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div id="from-options" class="space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="md:col-span-1 flex justify-center pt-2 md:pt-6">
+                    <button id="swap-btn" title="Hoán đổi đồng tiền" class="w-12 h-12 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-600 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-indigo-100">
+                        <i class="fa-solid fa-right-left text-base md:rotate-0 rotate-90"></i>
+                    </button>
+                </div>
+
+                <!-- To Currency -->
+                <div class="md:col-span-4 relative">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Sang đồng tiền</label>
+                    <button type="button" id="to-btn" class="w-full flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-left focus:ring-2 focus:ring-indigo-500">
+                        <!-- Populated by JS -->
+                    </button>
+                    <!-- Dropdown List -->
+                    <div id="to-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 p-2 custom-scrollbar max-h-72 overflow-y-auto">
+                        <div class="p-1 mb-2 sticky top-0 bg-white">
+                            <input type="text" id="to-search" placeholder="Tìm kiếm đồng tiền..." class="w-full px-3 py-2 bg-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div id="to-options" class="space-y-1"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Conversion Result Display -->
+            <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 mb-1" id="result-label">1,000,000 VND =</p>
+                    <div class="flex items-baseline space-x-2">
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-indigo-600 tracking-tight" id="result-amount">0.00</h2>
+                        <span class="text-lg font-bold text-slate-700" id="result-code">USD</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1" id="exchange-rate-info">1 VND = 0.000039 USD</p>
+                </div>
+
+                <div class="flex items-center space-x-2 text-xs text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200/80 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-regular fa-clock text-slate-400"></i>
+                        <span>Cập nhật lần cuối: <strong id="last-update" class="text-slate-700">Đang tải...</strong></span>
+                    </div>
+                    <button id="refresh-btn" class="hover:text-indigo-600 p-1 transition-colors" title="Làm mới tỷ giá">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Currency Comparison Table -->
+        <div class="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 p-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Bảng Quy Đổi Nhanh (12 Quốc Gia)</h3>
+                    <p class="text-xs text-slate-500">Giá trị quy đổi tương ứng theo đồng tiền nguồn gốc đã chọn</p>
+                </div>
+                <span class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-semibold" id="table-base-badge">Gốc: VND</span>
+            </div>
+
+            <!-- Grid List of Currencies -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="comparison-grid">
+                <!-- Dynamic Content Generated by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-5xl mx-auto px-4">
+            <p>Công cụ quy đổi 12 đồng tiền chính chủ yếu phục vụ nhu cầu tra cứu và du lịch.</p>
+            <p class="mt-1">Dữ liệu tỷ giá thực tế có thể chênh lệch tùy theo ngân hàng hoặc đơn vị giao dịch.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // 12 Selected Currencies Dataset with Flags & Symbols
+        const CURRENCIES = {
+            "VND": { name: "Việt Nam Đồng", country: "Việt Nam", flag: "🇻🇳", symbol: "₫", fallbackRate: 25450 },
+            "USD": { name: "Đô la Mỹ", country: "Mỹ", flag: "🇺🇸", symbol: "$", fallbackRate: 1 },
+            "EUR": { name: "Euro", country: "Châu Âu", flag: "🇪🇺", symbol: "€", fallbackRate: 0.92 },
+            "JPY": { name: "Yên Nhật", country: "Nhật Bản", flag: "🇯🇵", symbol: "¥", fallbackRate: 154.2 },
+            "KRW": { name: "Won Hàn Quốc", country: "Hàn Quốc", flag: "🇰🇷", symbol: "₩", fallbackRate: 1380 },
+            "GBP": { name: "Bảng Anh", country: "Anh", flag: "🇬🇧", symbol: "£", fallbackRate: 0.77 },
+            "AUD": { name: "Đô la Úc", country: "Úc", flag: "🇦🇺", symbol: "A$", fallbackRate: 1.52 },
+            "CAD": { name: "Đô la Canada", country: "Canada", flag: "🇨🇦", symbol: "C$", fallbackRate: 1.38 },
+            "SGD": { name: "Đô la Singapore", country: "Singapore", flag: "🇸🇬", symbol: "S$", fallbackRate: 1.35 },
+            "THB": { name: "Baht Thái", country: "Thái Lan", flag: "🇹🇭", symbol: "฿", fallbackRate: 36.5 },
+            "CNY": { name: "Nhân dân tệ", country: "Trung Quốc", flag: "🇨🇳", symbol: "¥", fallbackRate: 7.24 },
+            "TWD": { name: "Tân Đài tệ", country: "Đài Loan", flag: "🇹🇼", symbol: "NT$", fallbackRate: 32.4 }
+        };
+
+        // Application State
+        let rates = {}; // Stores exchange rates relative to USD
+        let fromCode = "VND";
+        let toCode = "USD";
+        let isOnlineData = false;
+
+        // DOM Elements
+        const amountInput = document.getElementById('amount-input');
+        const clearAmountBtn = document.getElementById('clear-amount');
+        const fromBtn = document.getElementById('from-btn');
+        const toBtn = document.getElementById('to-btn');
+        const fromDropdown = document.getElementById('from-dropdown');
+        const toDropdown = document.getElementById('to-dropdown');
+        const fromOptions = document.getElementById('from-options');
+        const toOptions = document.getElementById('to-options');
+        const fromSearch = document.getElementById('from-search');
+        const toSearch = document.getElementById('to-search');
+        const swapBtn = document.getElementById('swap-btn');
+        const resultLabel = document.getElementById('result-label');
+        const resultAmount = document.getElementById('result-amount');
+        const resultCode = document.getElementById('result-code');
+        const exchangeRateInfo = document.getElementById('exchange-rate-info');
+        const lastUpdateEl = document.getElementById('last-update');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const apiStatus = document.getElementById('api-status');
+        const comparisonGrid = document.getElementById('comparison-grid');
+        const tableBaseBadge = document.getElementById('table-base-badge');
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            setupDefaultRates();
+            renderDropdownOptions();
+            updateDropdownButtons();
+            fetchExchangeRates();
+            setupEventListeners();
+        });
+
+        // Set Fallback Exchange Rates (based on USD)
+        function setupDefaultRates() {
+            Object.keys(CURRENCIES).forEach(code => {
+                rates[code] = CURRENCIES[code].fallbackRate;
+            });
+            const now = new Date();
+            lastUpdateEl.textContent = now.toLocaleTimeString('vi-VN') + " (Offline)";
+        }
+
+        // Fetch Live Exchange Rates from Free API
+        async function fetchExchangeRates() {
+            refreshBtn.classList.add('animate-spin');
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                if (data && data.rates) {
+                    Object.keys(CURRENCIES).forEach(code => {
+                        if (data.rates[code]) {
+                            rates[code] = data.rates[code];
+                        }
+                    });
+                    isOnlineData = true;
+                    apiStatus.classList.remove('hidden');
+                    const updateTime = new Date(data.time_last_update_unix * 1000);
+                    lastUpdateEl.textContent = updateTime.toLocaleTimeString('vi-VN') + " " + updateTime.toLocaleDateString('vi-VN');
+                }
+            } catch (error) {
+                console.warn('Khong the lay ty gia online, su dung ty gia mac dinh:', error);
+                setupDefaultRates();
+                isOnlineData = false;
+                apiStatus.classList.add('hidden');
+            } finally {
+                refreshBtn.classList.remove('animate-spin');
+                calculateConversion();
+            }
+        }
+
+        // Format Number with Commas
+        function formatNumber(num, maxDecimals = 2) {
+            if (isNaN(num)) return '0';
+            return new Intl.NumberFormat('vi-VN', {
+                maximumFractionDigits: maxDecimals,
+                minimumFractionDigits: 0
+            }).format(num);
+        }
+
+        // Parse Raw Input to Clean Floating Number
+        function getCleanAmount() {
+            const cleanStr = amountInput.value.replace(/[^0-9.]/g, '');
+            return parseFloat(cleanStr) || 0;
+        }
+
+        // Perform Main Currency Conversion Calculation
+        function calculateConversion() {
+            const rawAmount = getCleanAmount();
+            
+            // Calculate rate: USD is base -> Amount * (Rate_TO / Rate_FROM)
+            const rateFromUSD = rates[fromCode] || 1;
+            const rateToUSD = rates[toCode] || 1;
+            
+            const rate = rateToUSD / rateFromUSD;
+            const convertedValue = rawAmount * rate;
+
+            // Render Results
+            resultLabel.textContent = `${formatNumber(rawAmount)} ${fromCode} =`;
+            
+            // Decimals formatting rule for small vs large currencies
+            let decimals = 2;
+            if (toCode === 'VND' || toCode === 'JPY' || toCode === 'KRW') decimals = 0;
+            if (convertedValue < 0.01 && convertedValue > 0) decimals = 6;
+
+            resultAmount.textContent = formatNumber(convertedValue, decimals);
+            resultCode.textContent = toCode;
+
+            // Exchange rate tagline
+            const unitRate = 1 * rate;
+            let unitDecimals = (toCode === 'VND' || toCode === 'KRW') ? 2 : 4;
+            exchangeRateInfo.textContent = `1 ${fromCode} = ${formatNumber(unitRate, unitDecimals)} ${toCode}`;
+
+            // Update Comparison Grid
+            renderComparisonGrid(rawAmount);
+        }
+
+        // Render Comparison Table for all 12 currencies
+        function renderComparisonGrid(amount) {
+            tableBaseBadge.textContent = `Gốc: ${CURRENCIES[fromCode].flag} ${fromCode}`;
+            comparisonGrid.innerHTML = '';
+
+            const baseRateUSD = rates[fromCode] || 1;
+
+            Object.keys(CURRENCIES).forEach(code => {
+                const targetRateUSD = rates[code] || 1;
+                const converted = amount * (targetRateUSD / baseRateUSD);
+                
+                const isSelected = code === fromCode;
+                let decimals = (code === 'VND' || code === 'JPY' || code === 'KRW') ? 0 : 2;
+
+                const cardHtml = `
+                    <div class="flex items-center justify-between p-3 rounded-xl border ${isSelected ? 'bg-indigo-50/60 border-indigo-200' : 'bg-slate-50/50 border-slate-100 hover:border-slate-200'} transition-all">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">${CURRENCIES[code].flag}</span>
+                            <div>
+                                <div class="font-bold text-slate-800 text-sm">${code} <span class="text-xs font-normal text-slate-500">(${CURRENCIES[code].symbol})</span></div>
+                                <div class="text-xs text-slate-400">${CURRENCIES[code].country}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-slate-900 text-sm">${formatNumber(converted, decimals)}</div>
+                            <div class="text-[10px] text-slate-400">1 ${fromCode} = ${formatNumber(targetRateUSD / baseRateUSD, 4)}</div>
+                        </div>
+                    </div>
+                `;
+                comparisonGrid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Custom Dropdown Buttons UI Update
+        function updateDropdownButtons() {
+            const fromData = CURRENCIES[fromCode];
+            const toData = CURRENCIES[toCode];
+
+            fromBtn.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">${fromData.flag}</span>
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${fromCode}</div>
+                        <div class="text-xs text-slate-500 truncate max-w-[100px]">${fromData.name}</div>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+            `;
+
+            toBtn.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">${toData.flag}</span>
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${toCode}</div>
+                        <div class="text-xs text-slate-500 truncate max-w-[100px]">${toData.name}</div>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+            `;
+        }
+
+        // Render Searchable Dropdown Items
+        function renderDropdownOptions(filterFrom = '', filterTo = '') {
+            fromOptions.innerHTML = '';
+            toOptions.innerHTML = '';
+
+            Object.keys(CURRENCIES).forEach(code => {
+                const currency = CURRENCIES[code];
+                const searchKey = `${code} ${currency.name} ${currency.country}`.toLowerCase();
+
+                // From List
+                if (!filterFrom || searchKey.includes(filterFrom.toLowerCase())) {
+                    const elFrom = createOptionElement(code, currency, code === fromCode);
+                    elFrom.addEventListener('click', () => {
+                        fromCode = code;
+                        updateDropdownButtons();
+                        fromDropdown.classList.add('hidden');
+                        calculateConversion();
+                    });
+                    fromOptions.appendChild(elFrom);
+                }
+
+                // To List
+                if (!filterTo || searchKey.includes(filterTo.toLowerCase())) {
+                    const elTo = createOptionElement(code, currency, code === toCode);
+                    elTo.addEventListener('click', () => {
+                        toCode = code;
+                        updateDropdownButtons();
+                        toDropdown.classList.add('hidden');
+                        calculateConversion();
+                    });
+                    toOptions.appendChild(elTo);
+                }
+            });
+        }
+
+        // Helper to Generate Single Option Item
+        function createOptionElement(code, currency, isSelected) {
+            const div = document.createElement('div');
+            div.className = `flex items-center justify-between p-2.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors ${isSelected ? 'bg-indigo-50 font-semibold text-indigo-600' : 'text-slate-700'}`;
+            div.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl">${currency.flag}</span>
+                    <div>
+                        <span class="text-sm font-bold">${code}</span>
+                        <span class="text-xs text-slate-400 ml-1">- ${currency.name}</span>
+                    </div>
+                </div>
+                ${isSelected ? '<i class="fa-solid fa-check text-indigo-600 text-xs"></i>' : ''}
+            `;
+            return div;
+        }
+
+        // Setup All UI Event Listeners
+        function setupEventListeners() {
+            // Amount Input Masking & Live Calculation
+            amountInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/[^0-9]/g, '');
+                if (value) {
+                    e.target.value = parseInt(value, 10).toLocaleString('vi-VN');
+                } else {
+                    e.target.value = '';
+                }
+                calculateConversion();
+            });
+
+            // Clear Amount Button
+            clearAmountBtn.addEventListener('click', () => {
+                amountInput.value = '';
+                amountInput.focus();
+                calculateConversion();
+            });
+
+            // Toggle Dropdowns
+            fromBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toDropdown.classList.add('hidden');
+                fromDropdown.classList.toggle('hidden');
+                if (!fromDropdown.classList.contains('hidden')) {
+                    fromSearch.focus();
+                }
+            });
+
+            toBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fromDropdown.classList.add('hidden');
+                toDropdown.classList.toggle('hidden');
+                if (!toDropdown.classList.contains('hidden')) {
+                    toSearch.focus();
+                }
+            });
+
+            // Search Filter Typing
+            fromSearch.addEventListener('input', (e) => {
+                renderDropdownOptions(e.target.value, toSearch.value);
+            });
+
+            toSearch.addEventListener('input', (e) => {
+                renderDropdownOptions(fromSearch.value, e.target.value);
+            });
+
+            // Close Dropdowns on Click Outside
+            document.addEventListener('click', (e) => {
+                if (!fromDropdown.contains(e.target) && !fromBtn.contains(e.target)) {
+                    fromDropdown.classList.add('hidden');
+                }
+                if (!toDropdown.contains(e.target) && !toBtn.contains(e.target)) {
+                    toDropdown.classList.add('hidden');
+                }
+            });
+
+            // Swap Currencies Button
+            swapBtn.addEventListener('click', () => {
+                const temp = fromCode;
+                fromCode = toCode;
+                toCode = temp;
+                updateDropdownButtons();
+                calculateConversion();
+            });
+
+            // Refresh Rates
+            refreshBtn.addEventListener('click', () => {
+                fetchExchangeRates();
+            });
+        }
+    </script>
+</body>
+</html>
